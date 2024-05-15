@@ -1,0 +1,46 @@
+name: Docker Parameterframe Build and Push
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - main.py
+      - utils/*
+      - conf/mocker_setup_params.yaml
+      - conf/settings.py
+      - env_spec/Dockerfile_run
+      - .github/workflows/*
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v2
+
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v1
+
+        - name: Login to DockerHub
+          uses: docker/login-action@v1
+          with:
+            username: ${{ secrets.DOCKER_USERNAME }}
+            password: ${{ secrets.DOCKER_PASSWORD }}
+
+        - name: Build and Push
+          uses: docker/build-push-action@v2
+          with:
+            context: .
+            file: ${{ github.workspace }}/env_spec/Dockerfile_run
+            push: true
+            tags: kyriosskia/parameterframe:latest
+
+
+
+
+
+

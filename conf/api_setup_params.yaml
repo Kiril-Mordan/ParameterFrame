@@ -1,0 +1,5 @@
+database_connector_type : 'SQLALCHEMY'
+base_url : 'postgresql+psycopg2://postgres:mysecretpassword@localhost:5432/mytestdb'
+# database_connector_type : 'Mocker'
+# base_url : 'http://localhost:8001'
+chunk_size : 3000
