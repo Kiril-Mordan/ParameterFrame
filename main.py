@@ -4,7 +4,7 @@ import os
 # api
 from fastapi import FastAPI, HTTPException, UploadFile, File, Response, Header, Depends, Form, Body, status
 from fastapi.responses import FileResponse, JSONResponse
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 import shutil
 # core dependencies
@@ -18,9 +18,6 @@ from utils.response_descriptions import *
 # other
 from utils.other import process_and_store_files, generate_random_name
 
-# types
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
 
 # start the app and activate mockerdb
 app = FastAPI(version=API_VERSION)
@@ -28,7 +25,7 @@ app = FastAPI(version=API_VERSION)
 
 def check_access_key(access_key : str):
 
-    if access_key != os.getenv("ACCESS_KEY"):
+    if access_key != API_SETUP_PARAMS['access_key']:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Bad Access Key",
@@ -57,7 +54,7 @@ async def declare_solution(
     deprecation_date : Optional[str] = Form(default= None, example = "2024-xx-xx",
                                             description="Deprication date of solution if known."),
     maintainers : Optional[str] = Form(default= None, example = "Maintainer 1, Mainteiner 2",
-                                                description="Some text about maintainers credentials"),
+                                                description="[maintainer 1, maintainer 2, ...]"),
     access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
@@ -117,7 +114,7 @@ async def declare_solution(
           description="Upload files for parameter set and assign the to already declared solution.",
           response_model=UploadParameterResponse,
           responses=UploadParameter)
-async def upload_files(
+async def upload_parameter_set(
     files: List[UploadFile] = File(..., description="Files that should be uploaded as parameter set"),
     solution_id : str = Form(..., example = "cec89c4cbb8c891d388407ea93d84a5cd4f996af6d5c1b0cc5fe1cb12101acf5",
                              description = "Existing solution_id."),
@@ -240,7 +237,7 @@ async def get_latest_parameter_set_id(
           description="Change deployment status of select parameter set from staging to production.",
           response_model=ChangeStatusFromStagingToProductionResponse,
           responses=ChangeStatusFromStagingToProduction)
-async def show_parameters(
+async def change_status_from_staging_to_production(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     access_key : str = Header(..., description = "Access key for request authentication.")
@@ -283,7 +280,7 @@ async def show_parameters(
           description="Change deployment status of select parameter set from production to archived.",
           response_model=ChangeStatusFromProductionToArchivedResponse,
           responses=ChangeStatusFromProductionToArchived)
-async def show_parameters(
+async def change_status_from_production_to_archived(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     access_key : str = Header(..., description = "Access key for request authentication.")
@@ -326,7 +323,7 @@ async def show_parameters(
           description="Change deployment status of select parameter set from archived to production.",
           response_model=ChangeStatusFromArchivedToProductionResponse,
           responses=ChangeStatusFromArchivedToProduction)
-async def show_parameters(
+async def change_status_from_archived_production(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     access_key : str = Header(..., description = "Access key for request authentication.")
@@ -369,7 +366,7 @@ async def show_parameters(
           description="Change deployment status of select parameter set from existing status to new status.",
           response_model=ChangeDeploymentStatusResponse,
           responses=ChangeDeploymentStatus)
-async def show_parameters(
+async def change_deployment_status(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     current_deployment_status : str = Form(..., example = "current deployment status"),
@@ -546,7 +543,7 @@ async def show_parameters(
           description="Download files from a given parameter set.",
           #response_model=DownloadParameterSetResponse,
           responses=DownloadParameterSet)
-async def download_file(
+async def download_parameter_set(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example="example parameter_set_id", description= "Parameter set id."),
     access_key : str = Header(..., description = "Access key for request authentication.")
