@@ -2,7 +2,7 @@
 import numpy as np
 import os
 # api
-from fastapi import FastAPI, HTTPException, UploadFile, File, Response, Header, Depends, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Response, Header, Depends, Form, Body, status
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List
 from pathlib import Path
@@ -12,7 +12,9 @@ from parameterframe import ParameterFrame, SqlAlchemyDatabaseManager, MockerData
 # from mocker_db import MockerDB, MockerConnector
 from conf.settings import API_SETUP_PARAMS, API_VERSION
 # types
-#from utils.response_descriptions import *
+from utils.data_types import *
+# endpoint descriptions
+from utils.response_descriptions import *
 # other
 from utils.other import process_and_store_files, generate_random_name
 
@@ -23,29 +25,45 @@ from typing import List, Optional, Dict, Any
 # start the app and activate mockerdb
 app = FastAPI(version=API_VERSION)
 
+
+def check_access_key(access_key : str):
+
+    if access_key != os.getenv("ACCESS_KEY"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bad Access Key",
+            headers={"WWW-Authenticate" : "Bearer"}
+        )
+
+
 # endpoints
 @app.get("/")
 def read_root():
     return "Still alive!"
 
 
-# Temporary directory to store uploaded files
-UPLOAD_DIR = Path("persist")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-
-
-@app.post("/declare_solution")
+@app.post("/declare_solution",
+          description="Provide basic description of new solution.",
+          response_model=DeclareSolutionResponse,
+          responses=DeclareSolution)
 async def declare_solution(
-    solution_name : str = Form(..., example = "new solution name"),
-    solution_description : Optional[str] = Form(None, example = "Description of new example solution."),
-    deployment_date : Optional[str] = Form(None, example = "2024-xx-xx"),
-    deprecation_date : Optional[str] = Form(None, example = "2024-xx-xx"),
-    maintainers : Optional[str] = Form(None, example = "some text about maintainers credentials")
+    solution_name : str = Form(..., example = "solution_name",
+                               description="New solution name"),
+    solution_description : Optional[str] = Form(default= None,
+                                                example = "Description of new example solution.",
+                                                description="Description of new example solution."),
+    deployment_date : Optional[str] = Form(default= None, example = "2024-xx-xx",
+                                                description="Deployment date of solution."),
+    deprecation_date : Optional[str] = Form(default= None, example = "2024-xx-xx",
+                                            description="Deprication date of solution if known."),
+    maintainers : Optional[str] = Form(default= None, example = "Maintainer 1, Mainteiner 2",
+                                                description="Some text about maintainers credentials"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
-
     try:
+
+        check_access_key(access_key = access_key)
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
 
@@ -95,16 +113,27 @@ async def declare_solution(
     #     shutil.rmtree(random_dir)
 
 
-
-@app.post("/upload_parameter_set")
+@app.post("/upload_parameter_set",
+          description="Upload files for parameter set and assign the to already declared solution.",
+          response_model=UploadParameterResponse,
+          responses=UploadParameter)
 async def upload_files(
-    files: List[UploadFile] = File(...),
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_name : Optional[str] = Form(default=None, example="example parameter set name"),
-    parameter_set_description : Optional[str] = Form(default=None, example="example description")
+    files: List[UploadFile] = File(..., description="Files that should be uploaded as parameter set"),
+    solution_id : str = Form(..., example = "cec89c4cbb8c891d388407ea93d84a5cd4f996af6d5c1b0cc5fe1cb12101acf5",
+                             description = "Existing solution_id."),
+    parameter_set_name : Optional[str] = Form(default=None,
+                                              example="5779bbf896ebb8f09a6ea252b09f8adb1a416e8780cf1424fb9bb93dbec8deb5",
+                                              description="Parameter set name."),
+    parameter_set_description : Optional[str] = Form(default=None,
+                                                     example="example description",
+                                                     description="Parameter set description."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
         random_dir_name = generate_random_name()
         process_and_store_files(files, directory=random_dir_name)
@@ -164,13 +193,22 @@ async def upload_files(
     finally:
         shutil.rmtree(random_dir_name)
 
-@app.post("/get_latest_parameter_set_id")
+@app.post("/get_latest_parameter_set_id",
+          description="Get parameter set ids for a given solution and deployment status, since newly defined are marked with STAGING, it is used by default.",
+          response_model=GetLatestParameterSetIdResponse,
+          responses=GetLatestParameterSetId)
 async def get_latest_parameter_set_id(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    deployment_status : Optional[str] = Form("STAGING", example = "STAGING")
+    solution_id : str = Form(..., example = "existing solution_id",
+                             description= "Solution id."),
+    deployment_status : Optional[str] = Form("STAGING", example = "STAGING",
+                                             description= "Deployment status for solution id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -198,13 +236,20 @@ async def get_latest_parameter_set_id(
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/change_status_from_staging_to_production")
+@app.post("/change_status_from_staging_to_production",
+          description="Change deployment status of select parameter set from staging to production.",
+          response_model=ChangeStatusFromStagingToProductionResponse,
+          responses=ChangeStatusFromStagingToProduction)
 async def show_parameters(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -222,25 +267,32 @@ async def show_parameters(
                 chunk_size = API_SETUP_PARAMS['chunk_size']
             )
 
-        pf.change_status_from_staging_to_production(
+        status = pf.change_status_from_staging_to_production(
             solution_id=solution_id,
             parameter_set_id=parameter_set_id
         )
 
-        return True
+        return {'outcome_success' : status}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/change_status_from_production_to_archived")
+@app.post("/change_status_from_production_to_archived",
+          description="Change deployment status of select parameter set from production to archived.",
+          response_model=ChangeStatusFromProductionToArchivedResponse,
+          responses=ChangeStatusFromProductionToArchived)
 async def show_parameters(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -258,25 +310,32 @@ async def show_parameters(
                 chunk_size = API_SETUP_PARAMS['chunk_size']
             )
 
-        pf.change_status_from_production_to_archived(
+        status = pf.change_status_from_production_to_archived(
             solution_id=solution_id,
             parameter_set_id=parameter_set_id
         )
 
-        return True
+        return {'outcome_success' : status}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/change_status_from_archived_production")
+@app.post("/change_status_from_archived_production",
+          description="Change deployment status of select parameter set from archived to production.",
+          response_model=ChangeStatusFromArchivedToProductionResponse,
+          responses=ChangeStatusFromArchivedToProduction)
 async def show_parameters(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -294,27 +353,34 @@ async def show_parameters(
                 chunk_size = API_SETUP_PARAMS['chunk_size']
             )
 
-        pf.change_status_from_archived_production(
+        status = pf.change_status_from_archived_production(
             solution_id=solution_id,
             parameter_set_id=parameter_set_id
         )
 
-        return True
+        return {'outcome_success' : status}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/change_deployment_status")
+@app.post("/change_deployment_status",
+          description="Change deployment status of select parameter set from existing status to new status.",
+          response_model=ChangeDeploymentStatusResponse,
+          responses=ChangeDeploymentStatus)
 async def show_parameters(
-    solution_id : str = Form(..., example = "existing solution_id"),
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     current_deployment_status : str = Form(..., example = "current deployment status"),
-    new_deployment_status : str = Form(..., example = "new deployment status")
+    new_deployment_status : str = Form(..., example = "new deployment status"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -332,24 +398,29 @@ async def show_parameters(
                 chunk_size = API_SETUP_PARAMS['chunk_size']
             )
 
-        pf.database_connector.modify_parameter_set_status(
+        status = pf.database_connector.modify_parameter_set_status(
             solution_id=solution_id,
             parameter_set_ids = parameter_set_id,
             current_deployment_status = current_deployment_status,
             new_deployment_status = new_deployment_status
         )
 
-        return True
+        return {'outcome_success' : status}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/show_solutions")
-async def show_solutions():
+@app.post("/show_solutions",
+          description="Show description of all solutions in parameter storage",
+          response_model=ShowSolutionsResponse,
+          responses=ShowSolutions)
+async def show_solutions(access_key : str = Header(..., description = "Access key for request authentication.")):
 
     try:
+
+        check_access_key(access_key = access_key)
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -367,24 +438,33 @@ async def show_solutions():
                 chunk_size = API_SETUP_PARAMS['chunk_size']
             )
 
-        pf.pull_solution()
+        pf.pull_solution(
+            pull_attribute_values = False
+        )
 
         solutions = pf.show_solutions()
 
-        return  solutions.to_dict('records')
+        return {'response' : solutions.to_dict('records')}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/show_parameter_sets")
+@app.post("/show_parameter_sets",
+          description="Show description of all or select parameter set for a given solution.",
+          response_model=ShowParameterSetsResponse,
+          responses=ShowParameterSets)
 async def show_parameter_sets(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : Optional[str] = Form(default=None, example = "existing parameter_set_id")
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : Optional[str] = Form(default=None, example = "existing parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -404,24 +484,32 @@ async def show_parameter_sets(
 
         pf.pull_solution(solution_id=solution_id,
                   # optionally specify parameter_set_id
-                 parameter_set_id=parameter_set_id)
+                 parameter_set_id=parameter_set_id,
+                 pull_attribute_values = False)
 
         parameter_sets = pf.show_parameter_sets(solution_id=solution_id)
 
-        return  parameter_sets.to_dict('records')
+        return {'response' :  parameter_sets.to_dict('records')}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-@app.post("/show_parameters")
+@app.post("/show_parameters",
+          description="Show description of all select parameters for a given solution id and parameter set id.",
+          response_model=ShowParametesResponse,
+          responses=ShowParameters)
 async def show_parameters(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -441,26 +529,32 @@ async def show_parameters(
 
         pf.pull_solution(solution_id=solution_id,
                   # optionally specify parameter_set_id
-                 parameter_set_id=parameter_set_id)
+                 parameter_set_id=parameter_set_id,
+                 pull_attribute_values = False)
 
         parameters = pf.show_parameters(solution_id=solution_id,
                                             parameter_set_id=parameter_set_id)
 
-        return  parameters.to_dict('records')
+        return {'response' : parameters.to_dict('records')}
 
     except HTTPException as e:
         print(f"HTTPException : {e.detail}")
     except Exception as e:
         raise Exception(f"Error : {e}")
 
-
-@app.post("/download_parameter_set")
+@app.post("/download_parameter_set",
+          description="Download files from a given parameter set.",
+          #response_model=DownloadParameterSetResponse,
+          responses=DownloadParameterSet)
 async def download_file(
-    solution_id : str = Form(..., example = "existing solution_id"),
-    parameter_set_id : str = Form(..., example="example parameter_set_id"),
+    solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
+    parameter_set_id : str = Form(..., example="example parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
 ):
 
     try:
+
+        check_access_key(access_key = access_key)
 
         # store files in new dir for adding to parameterframe
         random_dir_name = generate_random_name()

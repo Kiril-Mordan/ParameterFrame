@@ -29,19 +29,21 @@ def generate_markdown(data):
             # Extracting Request Body Example
             request_body = details.get('requestBody', {})
             if request_body:
-                content = request_body.get('content', {}).get('application/json', {})
-                schema = content.get('schema', {})
-                example = extract_example(schema, components)
-                example_json = json.dumps(example, indent=2).replace('\n', '\n  ')
-                endpoint_str += f"- **Request Body**:\n  ```json\n  {example_json}\n  ```\n"
+                for content_type, content in request_body.get('content', {}).items():
+                    schema = content.get('schema', {})
+                    example = extract_example(schema, components)
+                    example_json = json.dumps(example, indent=2).replace('\n', '\n  ')
+                    endpoint_str += f"- **Request Body ({content_type})**:\n  ```json\n  {example_json}\n  ```\n"
 
             # Handling Responses
             responses = details.get('responses', {})
             for status_code, response in responses.items():
                 response_description = response.get('description', '')
-                response_content = response.get('content', {}).get('application/json', {})
-                response_example = json.dumps(response_content.get('example', {}), indent=2).replace('\n', '\n  ')
-                endpoint_str += f"- **Response {status_code}**: {response_description}\n  ```json\n  {response_example}\n  ```\n\n"
+                for content_type, content in response.get('content', {}).items():
+                    schema = content.get('schema', {})
+                    example = extract_example(schema, components)
+                    example_json = json.dumps(example, indent=2).replace('\n', '\n  ')
+                    endpoint_str += f"- **Response {status_code} ({content_type})**: {response_description}\n  ```json\n  {example_json}\n  ```\n\n"
 
             endpoints.append(endpoint_str)
 
