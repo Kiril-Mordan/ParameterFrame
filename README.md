@@ -2,7 +2,7 @@
 
 <a><img src="https://github.com/Kiril-Mordan/ParameterFrame/blob/main/docs/parameterframe_logo.png" width="35%" height="35%" align="right" /></a>
 
-This provides an interface for managing solution parameters. It allows for structured storage and retrieval of parameter sets from a given database. The goal is to have a simple and rudamentory way to organize centralized configuration file storage for multiple solutions at the same times within any kind of available storage solution. More related to `parameterframe` could be seen [here](https://github.com/Kiril-Mordan/reusables).
+This provides an interface for managing solution parameters. It allows for structured storage and retrieval of parameter sets from a given database. The goal is to have a simple and rudamentory way to organize centralized configuration file storage for multiple solutions at the same time within any kind of available storage solution. More related to `parameterframe` could be seen [here](https://github.com/Kiril-Mordan/reusables).
 
 ## Run locally
 
@@ -25,6 +25,9 @@ uvicorn main:app --port 8000
 docker pull kyriosskia/parameterframe:latest
 docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/dbname' -e ACCESS_KEY='your_access_key_value' kyriosskia/parameterframe:latest
 ```
+
+  - DATABASE_URL : connection string for database
+  - ACCESS_KEY : key to access endpoints
 
 
 # API Endpoints
@@ -71,7 +74,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Upload Files
+### Upload Parameter Set
 
 - **Method**: POST
 - **URL**: `/upload_parameter_set`
@@ -127,7 +130,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Show Parameters
+### Change Status From Staging To Production
 
 - **Method**: POST
 - **URL**: `/change_status_from_staging_to_production`
@@ -154,7 +157,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Show Parameters
+### Change Status From Production To Archived
 
 - **Method**: POST
 - **URL**: `/change_status_from_production_to_archived`
@@ -181,7 +184,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Show Parameters
+### Change Status From Archived Production
 
 - **Method**: POST
 - **URL**: `/change_status_from_archived_production`
@@ -208,7 +211,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Show Parameters
+### Change Deployment Status
 
 - **Method**: POST
 - **URL**: `/change_deployment_status`
@@ -311,7 +314,7 @@ docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/db
   ```
 
 
-### Download File
+### Download Parameter Set
 
 - **Method**: POST
 - **URL**: `/download_parameter_set`

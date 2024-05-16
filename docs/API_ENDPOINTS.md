@@ -42,7 +42,7 @@
   ```
 
 
-### Upload Files
+### Upload Parameter Set
 
 - **Method**: POST
 - **URL**: `/upload_parameter_set`
@@ -98,7 +98,7 @@
   ```
 
 
-### Show Parameters
+### Change Status From Staging To Production
 
 - **Method**: POST
 - **URL**: `/change_status_from_staging_to_production`
@@ -125,7 +125,7 @@
   ```
 
 
-### Show Parameters
+### Change Status From Production To Archived
 
 - **Method**: POST
 - **URL**: `/change_status_from_production_to_archived`
@@ -152,7 +152,7 @@
   ```
 
 
-### Show Parameters
+### Change Status From Archived Production
 
 - **Method**: POST
 - **URL**: `/change_status_from_archived_production`
@@ -179,7 +179,7 @@
   ```
 
 
-### Show Parameters
+### Change Deployment Status
 
 - **Method**: POST
 - **URL**: `/change_deployment_status`
@@ -282,7 +282,7 @@
   ```
 
 
-### Download File
+### Download Parameter Set
 
 - **Method**: POST
 - **URL**: `/download_parameter_set`
