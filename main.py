@@ -2,7 +2,7 @@
 import numpy as np
 import os
 # api
-from fastapi import FastAPI, HTTPException, UploadFile, File, Response, Header, Depends, Form, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Response, Header, Depends, Form, Body, status
 from fastapi.responses import FileResponse, JSONResponse
 from typing import List
 from pathlib import Path
@@ -25,16 +25,21 @@ from typing import List, Optional, Dict, Any
 # start the app and activate mockerdb
 app = FastAPI(version=API_VERSION)
 
+
+def check_access_key(access_key : str):
+
+    if access_key != os.getenv("ACCESS_KEY"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bad Access Key",
+            headers={"WWW-Authenticate" : "Bearer"}
+        )
+
+
 # endpoints
 @app.get("/")
 def read_root():
     return "Still alive!"
-
-
-# Temporary directory to store uploaded files
-UPLOAD_DIR = Path("persist")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
 
 
 @app.post("/declare_solution",
@@ -52,10 +57,13 @@ async def declare_solution(
     deprecation_date : Optional[str] = Form(default= None, example = "2024-xx-xx",
                                             description="Deprication date of solution if known."),
     maintainers : Optional[str] = Form(default= None, example = "Maintainer 1, Mainteiner 2",
-                                                description="Some text about maintainers credentials")
+                                                description="Some text about maintainers credentials"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
 
@@ -118,10 +126,14 @@ async def upload_files(
                                               description="Parameter set name."),
     parameter_set_description : Optional[str] = Form(default=None,
                                                      example="example description",
-                                                     description="Parameter set description.")
+                                                     description="Parameter set description."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
         random_dir_name = generate_random_name()
         process_and_store_files(files, directory=random_dir_name)
@@ -189,10 +201,14 @@ async def get_latest_parameter_set_id(
     solution_id : str = Form(..., example = "existing solution_id",
                              description= "Solution id."),
     deployment_status : Optional[str] = Form("STAGING", example = "STAGING",
-                                             description= "Deployment status for solution id.")
+                                             description= "Deployment status for solution id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -226,10 +242,14 @@ async def get_latest_parameter_set_id(
           responses=ChangeStatusFromStagingToProduction)
 async def show_parameters(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -265,10 +285,14 @@ async def show_parameters(
           responses=ChangeStatusFromProductionToArchived)
 async def show_parameters(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -304,10 +328,14 @@ async def show_parameters(
           responses=ChangeStatusFromArchivedToProduction)
 async def show_parameters(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id")
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -345,10 +373,14 @@ async def show_parameters(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example = "existing parameter_set_id"),
     current_deployment_status : str = Form(..., example = "current deployment status"),
-    new_deployment_status : str = Form(..., example = "new deployment status")
+    new_deployment_status : str = Form(..., example = "new deployment status"),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -384,9 +416,11 @@ async def show_parameters(
           description="Show description of all solutions in parameter storage",
           response_model=ShowSolutionsResponse,
           responses=ShowSolutions)
-async def show_solutions():
+async def show_solutions(access_key : str = Header(..., description = "Access key for request authentication.")):
 
     try:
+
+        check_access_key(access_key = access_key)
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -423,10 +457,14 @@ async def show_solutions():
           responses=ShowParameterSets)
 async def show_parameter_sets(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
-    parameter_set_id : Optional[str] = Form(default=None, example = "existing parameter_set_id", description= "Parameter set id.")
+    parameter_set_id : Optional[str] = Form(default=None, example = "existing parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -464,10 +502,14 @@ async def show_parameter_sets(
           responses=ShowParameters)
 async def show_parameters(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
-    parameter_set_id : str = Form(..., example = "existing parameter_set_id", description= "Parameter set id.")
+    parameter_set_id : str = Form(..., example = "existing parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
     ):
 
     try:
+
+        check_access_key(access_key = access_key)
+
         # store files in new dir for adding to parameterframe
 
         if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
@@ -507,9 +549,12 @@ async def show_parameters(
 async def download_file(
     solution_id : str = Form(..., example = "existing solution_id", description= "Solution id."),
     parameter_set_id : str = Form(..., example="example parameter_set_id", description= "Parameter set id."),
+    access_key : str = Header(..., description = "Access key for request authentication.")
 ):
 
     try:
+
+        check_access_key(access_key = access_key)
 
         # store files in new dir for adding to parameterframe
         random_dir_name = generate_random_name()

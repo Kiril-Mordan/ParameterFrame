@@ -23,7 +23,7 @@ uvicorn main:app --port 8000
 
 ```
 docker pull kyriosskia/parameterframe:latest
-docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/dbname' kyriosskia/parameterframe:latest
+docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/dbname' -e ACCESS_KEY='your_access_key_value' kyriosskia/parameterframe:latest
 ```
 
 
