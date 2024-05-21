@@ -36,7 +36,7 @@ GetLatestParameterSetId = {
 
 ChangeStatusFromStagingToProduction = {
     200: {
-        "description": "List of parameter set ids for solution and deployment status",
+        "description": "Success status",
         "content": {
             "application/json": {
                 "example": {
@@ -49,7 +49,7 @@ ChangeStatusFromStagingToProduction = {
 
 ChangeStatusFromProductionToArchived = {
     200: {
-        "description": "List of parameter set ids for solution and deployment status",
+        "description": "Success status",
         "content": {
             "application/json": {
                 "example": {
@@ -62,7 +62,7 @@ ChangeStatusFromProductionToArchived = {
 
 ChangeStatusFromArchivedToProduction = {
     200: {
-        "description": "List of parameter set ids for solution and deployment status",
+        "description": "Success status",
         "content": {
             "application/json": {
                 "example": {
@@ -75,7 +75,20 @@ ChangeStatusFromArchivedToProduction = {
 
 ChangeDeploymentStatus = {
     200: {
-        "description": "List of parameter set ids for solution and deployment status",
+        "description": "Success status",
+        "content": {
+            "application/json": {
+                "example": {
+                    "outcome_success": True
+                }
+            }
+        }
+    }
+}
+
+SetResetSchema = {
+    200: {
+        "description": "Success status",
         "content": {
             "application/json": {
                 "example": {
@@ -98,7 +111,9 @@ ShowSolutions = {
                     "deployment_date": "2024-xx-xx",
                     "deprecation_date": None,
                     "maintainers": "some text about maintainers credentials",
-                    "commited_parameter_sets": 6
+                    "commited_parameter_sets": 6,
+                    "aos" : 0.397157,
+                    "pos" : 0.428571
   }]
             }
         }
@@ -118,7 +133,9 @@ ShowParameterSets = {
       "parameter_set_description": "",
       "deployment_status": "STAGING",
       "insertion_datetime": "2024-05-16 00:05:43",
-      "commited_parameters": 1
+      "commited_parameters": 1,
+      "aos" : 0.371413,
+      "pos" : 0.142857
     },
     {
       "parameter_set_id": "2f3ee8e19d91a89298d40984df5e7bdd1f1a48008b2e61c88a7f6f81b4ab23f5",
@@ -126,7 +143,9 @@ ShowParameterSets = {
       "parameter_set_description": "",
       "deployment_status": "STAGING",
       "insertion_datetime": "2024-05-16 00:03:25",
-      "commited_parameters": 1
+      "commited_parameters": 1,
+      "aos" : 0.0,
+      "pos" : 0.0
     }
   ]
 }
@@ -148,7 +167,8 @@ ShowParameters = {
       "parameter_set_description": "",
       "deployment_status": "STAGING",
       "insertion_datetime": "2024-05-16 00:05:43",
-      "commited_parameters": 1
+      "commited_parameters": 1,
+      "aos" : 0.0
     },
     {
       "parameter_set_id": "2f3ee8e19d91a89298d40984df5e7bdd1f1a48008b2e61c88a7f6f81b4ab23f5",
@@ -156,7 +176,8 @@ ShowParameters = {
       "parameter_set_description": "",
       "deployment_status": "STAGING",
       "insertion_datetime": "2024-05-16 00:03:25",
-      "commited_parameters": 1
+      "commited_parameters": 1,
+      "aos" : 0.0
     }
   ]
 }

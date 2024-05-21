@@ -20,6 +20,7 @@ PERSIST_FILEPATH = os.getenv("PERSIST_FILEPATH")
 DATABASE_CONNECTOR_TYPE = os.getenv("DATABASE_CONNECTOR_TYPE")
 BASE_URL_STRING = os.getenv("BASE_URL_STRING")
 ACCESS_KEY = os.getenv("ACCESS_KEY")
+DB_ACCESS_KEY = os.getenv("DB_ACCESS_KEY")
 
 # update default paramers if any env parameters were provided
 
@@ -31,6 +32,8 @@ if BASE_URL_STRING:
     API_SETUP_PARAMS['base_url'] = BASE_URL_STRING
 if ACCESS_KEY:
     API_SETUP_PARAMS['access_key'] = ACCESS_KEY
+if DB_ACCESS_KEY:
+    API_SETUP_PARAMS['db_access_key'] = DB_ACCESS_KEY
 
 
 
