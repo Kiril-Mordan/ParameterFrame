@@ -43,4 +43,7 @@ class ShowParametesResponse(BaseModel):
 class ErrorResponseModel(BaseModel):
     detail: str
 
+class SetResetSchemaResponse(BaseModel):
+    outcome_success: bool
+
 

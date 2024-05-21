@@ -23,10 +23,11 @@ uvicorn main:app --port 8000
 
 ```
 docker pull kyriosskia/parameterframe:latest
-docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/dbname' -e ACCESS_KEY='your_access_key_value' kyriosskia/parameterframe:latest
+docker run -p 8000:8080 -e DATABASE_URL='postgresql://user:password@localhost/dbname' -e ACCESS_KEY='your_access_key_value' -e DB_ACCESS_KEY='access_key' kyriosskia/parameterframe:latest
 ```
 
   - DATABASE_URL : connection string for database
   - ACCESS_KEY : key to access endpoints
+  - DB_ACCESS_KEY : key to reset schema if databases that allow it
 
 

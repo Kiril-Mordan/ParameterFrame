@@ -1,21 +1,39 @@
 import json
+from typing import Dict, Any
 
-def load_json(file_path):
+def load_json(file_path: str) -> Dict[str, Any]:
     with open(file_path, 'r') as file:
         return json.load(file)
 
-def extract_example(schema, components):
+def resolve_ref(ref: str, components: Dict[str, Any]) -> Dict[str, Any]:
+    ref_path = ref.split('/components/schemas/', 1)[-1]
+    return components['schemas'][ref_path]
+
+def extract_example(schema: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
     if '$ref' in schema:
-        ref_path = schema['$ref'].split('/components/schemas/', 1)[-1]
-        schema = components['schemas'][ref_path]
+        schema = resolve_ref(schema['$ref'], components)
     if 'example' in schema:
         return schema['example']
     example = {}
     for prop, details in schema.get('properties', {}).items():
-        example[prop] = details.get('example', f'example_{prop}')
+        if '$ref' in details:
+            resolved_schema = resolve_ref(details['$ref'], components)
+            example[prop] = extract_example(resolved_schema, components)
+        elif 'properties' in details:
+            example[prop] = extract_example(details, components)
+        else:
+            example[prop] = details.get('example', f'example_{prop}')
     return example
 
-def generate_markdown(data):
+def extract_response_example(content: Dict[str, Any], components: Dict[str, Any]) -> Dict[str, Any]:
+    for content_type, content_details in content.items():
+        schema = content_details.get('schema', {})
+        if 'example' in content_details:
+            return content_details['example']
+        return extract_example(schema, components)
+    return {}
+
+def generate_markdown(data: Dict[str, Any]) -> str:
     components = data.get('components', {})
     endpoints = ["# API Endpoints\n\n"]
 
@@ -39,9 +57,10 @@ def generate_markdown(data):
             responses = details.get('responses', {})
             for status_code, response in responses.items():
                 response_description = response.get('description', '')
-                for content_type, content in response.get('content', {}).items():
-                    schema = content.get('schema', {})
-                    example = extract_example(schema, components)
+                content = response.get('content', {})
+                if content:
+                    content_type = list(content.keys())[0]  # Fix to get the first key
+                    example = extract_response_example(content, components)
                     example_json = json.dumps(example, indent=2).replace('\n', '\n  ')
                     endpoint_str += f"- **Response {status_code} ({content_type})**: {response_description}\n  ```json\n  {example_json}\n  ```\n\n"
 

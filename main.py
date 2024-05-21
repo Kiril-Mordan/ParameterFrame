@@ -32,11 +32,60 @@ def check_access_key(access_key : str):
             headers={"WWW-Authenticate" : "Bearer"}
         )
 
+def check_db_access_key(db_access_key : str):
+
+    if db_access_key != API_SETUP_PARAMS['db_access_key']:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Bad Access Key",
+            headers={"WWW-Authenticate" : "Bearer"}
+        )
+
 
 # endpoints
 @app.get("/")
 def read_root():
     return "Still alive!"
+
+
+@app.post("/set_reset_schema",
+          description="For databases that require predefined schema, drops tables and sets up new schema.",
+          response_model=SetResetSchemaResponse,
+          responses=SetResetSchema)
+async def set_reset_schema(access_key : str = Header(..., example="access_key", description = "Access key for request authentication."),
+                           db_access_key : str = Header(..., example="db_access_key", description = "Additional access key for unlocking table resets if existing connection allows.")):
+
+    try:
+
+        check_access_key(access_key = access_key)
+        # store files in new dir for adding to parameterframe
+
+        check_db_access_key(db_access_key = db_access_key)
+
+        if API_SETUP_PARAMS['database_connector_type'] == 'SQLALCHEMY':
+            # - with SqlAlchemy database connector
+            pf = ParameterFrame(
+                database_connector = SqlAlchemyDatabaseManager(connection_details = {
+                'base_url' : API_SETUP_PARAMS['base_url']}),
+                chunk_size = API_SETUP_PARAMS['chunk_size']
+            )
+        else:
+            # - with database connector for MockerDB
+            pf = ParameterFrame(
+                database_connector = MockerDatabaseConnector(connection_details = {
+                'base_url' : API_SETUP_PARAMS['base_url']}),
+                chunk_size = API_SETUP_PARAMS['chunk_size']
+            )
+
+        pf.database_connector.drop_tables()
+        pf.database_connector.create_tables()
+
+        return {'outcome_success' : True}
+
+    except HTTPException as e:
+        print(f"HTTPException : {e.detail}")
+    except Exception as e:
+        raise Exception(f"Error : {e}")
 
 
 @app.post("/declare_solution",
